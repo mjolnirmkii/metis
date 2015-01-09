@@ -4,6 +4,7 @@ Metis
 The source for Metis, a project to create a social media and verified news engine.
 
 Development Environment (Mac):
+
 1) Configure .bash_profile according to Homebrew instructions
 http://hackercodex.com/guide/mac-osx-mavericks-10.9-configuration/
 
