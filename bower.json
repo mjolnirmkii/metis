@@ -1,0 +1,22 @@
+{
+  "name": "metis",
+  "version": "0.0.0",
+  "description": "static content",
+  "keywords": [
+    "static",
+    "content"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "blogengine/static/bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "bootstrap": "~3.3.1",
+    "html5-boilerplate": "~4.3.0"
+  }
+}
