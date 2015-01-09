@@ -13,6 +13,7 @@ class PostTest(TestCase):
         # Set the attributes
         post.title = 'Testing Blog Post'
         post.text = 'This is a test blog post generated in the test class'
+        post.slug = 'my-first-post'
         post.pub_date = timezone.now()
 
         # Save post
@@ -27,6 +28,7 @@ class PostTest(TestCase):
         # Check all attributes individually
         self.assertEquals(only_post.title, 'Testing Blog Post')
         self.assertEquals(only_post.text, 'This is a test blog post generated in the test class')
+        self.assertEquals(only_post.slug, 'my-first-post')
         self.assertEquals(only_post.pub_date.day, post.pub_date.day)
         self.assertEquals(only_post.pub_date.month, post.pub_date.month)
         self.assertEquals(only_post.pub_date.year, post.pub_date.year)
@@ -93,6 +95,7 @@ class AdminTest(LiveServerTestCase):
         response = self.client.post('/admin/blogengine/post/add/', {
             'title': 'First Post',
             'text': 'This is the first post',
+            'slug': 'my-first-post',
             'pub_date_0': '2015-01-01',
             'pub_date_1': '12:00:05'
         },
@@ -112,6 +115,7 @@ class AdminTest(LiveServerTestCase):
         post = Post()
         post.title = 'First Post'
         post.text = 'This is the first post'
+        post.slug = 'my-first-post'
         post.pub_date = timezone.now()
         post.save()
 
@@ -122,6 +126,7 @@ class AdminTest(LiveServerTestCase):
         response = self.client.post('/admin/blogengine/post/' + str(post.pk) + '/', {
             'title': 'Second Post',
             'text': 'This is the second post',
+            'slug': 'my-second-post',
             'pub_date_0': '2015-01-01',
             'pub_date_1': '12:00:05'
         },
@@ -176,6 +181,7 @@ class PostViewTest(LiveServerTestCase):
         post = Post()
         post.title = 'First Post'
         post.text = 'This is [my first blog post](http://127.0.0.1:8080/)'
+        post.slug = 'my-first-post'
         post.pub_date = timezone.now()
         post.save()
 
@@ -200,3 +206,39 @@ class PostViewTest(LiveServerTestCase):
 
         # Check markdown link is correct html mark up
         self.assertTrue('<a href="http://127.0.0.1:8080/">my first blog post</a>' in response.content)
+
+    def test_post_page(self):
+        # Create the post
+        post = Post()
+        post.title = 'First Post'
+        post.text = 'This is [my first post](http://127.0.0.1:8080/)'
+        post.slug = 'my-first-post'
+        post.pub_date = timezone.now()
+        post.save()
+
+        # Check post saved
+        all_posts = Post.objects.all()
+        self.assertEquals(len(all_posts), 1)
+        only_post = all_posts[0]
+        self.assertEquals(only_post, post)
+
+        # Get post URL
+        post_url = only_post.get_absolute_url()
+
+        # Fetch post
+        response = self.client.get(post_url)
+        self.assertEquals(response.status_code, 200)
+
+        # Check the post title
+        self.assertTrue(post.title in response.content)
+
+        # Check post text
+        self.assertTrue(markdown.markdown(post.text) in response.content)
+
+        # Check post date
+        self.assertTrue(str(post.pub_date.year) in response.content)
+        self.assertTrue(post.pub_date.strftime('%b') in response.content)
+        self.assertTrue(str(post.pub_date.day) in response.content)
+
+        # Check markdown link is proper html mark up
+        self.assertTrue('<a href="http://127.0.0.1:8080/">my first post</a>' in response.content)
