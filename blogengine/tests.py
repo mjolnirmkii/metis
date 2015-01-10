@@ -1,4 +1,5 @@
 import markdown2 as markdown
+import feedparser
 from django.test import TestCase, LiveServerTestCase, Client
 from django.utils import timezone
 from blogengine.models import Post, Category, Tag
@@ -734,6 +735,68 @@ class PostViewTest(BaseAcceptanceTest):
 
         # Check the link is marked up properly
         self.assertTrue('<a href="http://127.0.0.1:8000/">my first blog post</a>' in response.content)
+
+class FeedTest(BaseAcceptanceTest):
+    def test_all_post_feed(self):
+        # Create category
+        category = Category()
+        category.name = 'security'
+        category.description = 'System or data security'
+        category.save()
+
+        # Create tag
+        tag = Tag()
+        tag.name = 'security'
+        tag.description = 'System or data security'
+        tag.save()
+
+        # Create author
+        author = User.objects.create_user('testuser', 'user@example.com', 'password')
+        author.save()
+
+        # Create site
+        site = Site()
+        site.name = 'example.com'
+        site.domain = 'example.com'
+        site.save()
+
+        # Create post
+        post = Post()
+        post.title = 'First Post'
+        post.text = 'First blog post'
+        post.slug = 'my-first-post'
+        post.pub_date = timezone.now()
+        post.author = author
+        post.site = site
+        post.category = category
+
+        # Save post
+        post.save()
+
+        # Add tag to post
+        post.tags.add(tag)
+        post.save()
+
+        # Check for post
+        all_posts = Post.objects.all()
+        self.assertEquals(len(all_posts), 1)
+        only_post = all_posts[0]
+        self.assertEquals(only_post, post)
+
+        # Get feed
+        response = self.client.get('/feeds/posts/', follow=True)
+        self.assertEquals(response.status_code, 200)
+
+        # Parse feed
+        feed = feedparser.parse(response.content)
+
+        # Check length
+        self.assertEquals(len(feed.entries), 1)
+
+        # Check post is correct
+        feed_post = feed.entries[0]
+        self.assertEquals(feed_post.title, post.title)
+        self.assertEquals(feed_post.description, post.text)
 
 class FlatPageViewTest(BaseAcceptanceTest):
     def test_create_flat_page(self):
