@@ -1,15 +1,41 @@
 import markdown2 as markdown
 from django.test import TestCase, LiveServerTestCase, Client
 from django.utils import timezone
-from blogengine.models import Post
+from blogengine.models import Post, Category
 from django.contrib.flatpages.models import FlatPage
 from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
 
 # Create your tests here.
 class PostTest(TestCase):
+    def test_create_category(self):
+        # Create a category
+        category = Category()
+
+        # Add stuff
+        category.name = 'security'
+        category.description = 'System or data security'
+
+        # Save, save, save
+        category.save()
+
+        # Check for category in db
+        all_categories = Category.objects.all()
+        self.assertEquals(len(all_categories), 1)
+        only_category = all_categories[0]
+        self.assertEquals(only_category, category)
+
+        # Check category data
+        self.assertEquals(only_category.name, 'security')
+        self.assertEquals(only_category.description, 'System or data security')
 
     def test_create_post(self):
+        # Create a category for post
+        category = Category()
+        category.name = 'security'
+        category.description = 'System or data security'
+        category.save()
+
         # Create an author
         author = User.objects.create_user('testuser', 'user@example.com', 'password')
         author.save()
@@ -30,6 +56,7 @@ class PostTest(TestCase):
         post.pub_date = timezone.now()
         post.author = author
         post.site = site
+        post.category = category
 
         # Save post
         post.save()
@@ -54,6 +81,8 @@ class PostTest(TestCase):
         self.assertEquals(only_post.author.email, 'user@example.com')
         self.assertEquals(only_post.site.name, 'example.com')
         self.assertEquals(only_post.site.domain, 'example.com')
+        self.assertEquals(only_post.category.name, 'security')
+        self.assertEquals(only_post.category.description, 'System or data security')
 
 class BaseAcceptanceTest(LiveServerTestCase):
     def set_up(self):
@@ -103,7 +132,89 @@ class AdminTest(BaseAcceptanceTest):
         # Check 'Log in' in response
         self.assertTrue('Log in' in response.content)
 
+    def test_create_category(self):
+        # Log in
+        self.client.login(username='bobsmith', password='password')
+
+        # Check response code
+        response = self.client.get('/admin/blogengine/category/add/', follow=True)
+        self.assertEquals(response.status_code, 200)
+
+        # Create new category
+        response = self.client.post('/admin/blogengine/category/add/', {
+            'name': 'security',
+            'description': 'System or data security'
+            },
+            follow=True
+        )
+        self.assertEquals(response.status_code, 200)
+
+        # Check category was added
+        self.assertTrue('added successfully' in response.content)
+
+        # Check category in db
+        all_categories = Category.objects.all()
+        self.assertEquals(len(all_categories), 1)
+
+    def test_edit_category(self):
+        # Create category
+        category = Category()
+        category.name = 'security'
+        category.description = 'System or data security'
+        category.save()
+
+        # Log in
+        self.client.login(username='bobsmith', password='password')
+
+        # Edit category
+        response = self.client.post('/admin/blogengine/category/' + str(category.pk) + '/', {
+            'name': 'cryptography',
+            'description': 'Cryptography and encryption'
+            },
+            follow=True
+        )
+        self.assertEquals(response.status_code, 200)
+
+        # Check change
+        self.assertTrue('changed successfully' in response.content)
+
+        # Check category data
+        all_categories = Category.objects.all()
+        self.assertEquals(len(all_categories), 1)
+        only_category = all_categories[0]
+        self.assertEquals(only_category.name, 'cryptography')
+        self.assertEquals(only_category.description, 'Cryptography and encryption')
+
+    def test_delete_category(self):
+        # Create category
+        category = Category()
+        category.name = 'security'
+        category.description = 'System or data security'
+        category.save()
+
+        # Log in
+        self.client.login(username='bobsmith', password="password")
+
+        # Delete the category
+        response = self.client.post('/admin/blogengine/category/' + str(category.pk) + '/delete/', {
+            'post': 'yes'
+        }, follow=True)
+        self.assertEquals(response.status_code, 200)
+
+        # Check deleted successfully
+        self.assertTrue('deleted successfully' in response.content)
+
+        # Check category deleted
+        all_categories = Category.objects.all()
+        self.assertEquals(len(all_categories), 0)
+
     def test_create_post(self):
+        # Create category
+        category = Category()
+        category.name = 'security'
+        category.description = 'System or data security'
+        category.save()
+
         # Log in
         self.client.login(username='bobsmith', password="password")
 
@@ -118,9 +229,10 @@ class AdminTest(BaseAcceptanceTest):
             'slug': 'my-first-post',
             'pub_date_0': '2015-01-01',
             'pub_date_1': '12:00:05',
-            'site': '1'
-        },
-        follow=True
+            'site': '1',
+            'category': str(category.pk)
+            },
+            follow=True
         )
         self.assertEquals(response.status_code, 200)
 
@@ -132,6 +244,12 @@ class AdminTest(BaseAcceptanceTest):
         self.assertEquals(len(all_posts), 1)
 
     def test_edit_post(self):
+        # Create category
+        category = Category()
+        category.name = 'security'
+        category.description = 'System or data security'
+        category.save()
+
         # Create author
         author = User.objects.create_user('testuser', 'user@example.com', 'password')
         author.save()
@@ -150,6 +268,7 @@ class AdminTest(BaseAcceptanceTest):
         post.pub_date = timezone.now()
         post.author = author
         post.site = site
+        post.category = category
         post.save()
 
         # Log in
@@ -162,9 +281,10 @@ class AdminTest(BaseAcceptanceTest):
             'slug': 'my-second-post',
             'pub_date_0': '2015-01-01',
             'pub_date_1': '12:00:05',
-            'site': '1'
-        },
-        follow=True
+            'site': '1',
+            'category': str(category.pk)
+            },
+            follow=True
         )
         self.assertEquals(response.status_code, 200)
 
@@ -179,6 +299,12 @@ class AdminTest(BaseAcceptanceTest):
         self.assertEquals(only_post.text, 'This is the second post')
 
     def test_delete_post(self):
+        # Create category
+        category = Category()
+        category.name = 'security'
+        category.description = 'System and data security'
+        category.save()
+
         # Create author
         author = User.objects.create_user('testuser', 'user@example.com', 'password')
         author.save()
@@ -196,6 +322,7 @@ class AdminTest(BaseAcceptanceTest):
         post.pub_date = timezone.now()
         post.author = author
         post.site = site
+        post.category = category
         post.save()
 
         # Check new post saved
@@ -220,6 +347,12 @@ class AdminTest(BaseAcceptanceTest):
 
 class PostViewTest(BaseAcceptanceTest):
     def test_index(self):
+        # Create category
+        category = Category()
+        category.name = 'security'
+        category.description = 'System or data security'
+        category.save()
+
         # Create author
         author = User.objects.create_user('tsetuser', 'user@example.com', 'password')
         author.save()
@@ -238,6 +371,7 @@ class PostViewTest(BaseAcceptanceTest):
         post.pub_date = timezone.now()
         post.author = author
         post.site = site
+        post.category = category
         post.save()
 
         # Check the post saved
@@ -263,6 +397,12 @@ class PostViewTest(BaseAcceptanceTest):
         self.assertTrue('<a href="http://127.0.0.1:8080/">my first blog post</a>' in response.content)
 
     def test_post_page(self):
+        # Create category
+        category = Category()
+        category.name = 'security'
+        category.description = 'System or data security'
+        category.save()
+
         # Create author
         author = User.objects.create_user('testuser', 'user@example.com', 'password')
         author.save()
@@ -281,6 +421,7 @@ class PostViewTest(BaseAcceptanceTest):
         post.pub_date = timezone.now()
         post.author = author
         post.site = site
+        post.category = category
         post.save()
 
         # Check post saved
