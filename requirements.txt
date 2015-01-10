@@ -2,3 +2,4 @@ Django==1.7.2
 feedparser==5.1.3
 markdown2==2.3.0
 Pygments==2.0.1
+pygments-style-solarized==0.1.1
