@@ -16,6 +16,7 @@ class PostTest(TestCase):
         # Add stuff
         category.name = 'security'
         category.description = 'System or data security'
+        category.slug = 'security'
 
         # Save, save, save
         category.save()
@@ -29,6 +30,7 @@ class PostTest(TestCase):
         # Check category data
         self.assertEquals(only_category.name, 'security')
         self.assertEquals(only_category.description, 'System or data security')
+        self.assertEquals(only_category.slug, 'security')
 
     def test_create_tag(self):
         # Create tag
@@ -37,6 +39,7 @@ class PostTest(TestCase):
         # Add attributes
         tag.name = 'security'
         tag.description = 'System or data security'
+        tag.slug = 'security'
 
         # Save it
         tag.save()
@@ -50,6 +53,7 @@ class PostTest(TestCase):
         # Check attributes
         self.assertEquals(only_tag.name, 'security')
         self.assertEquals(only_tag.description, 'System or data security')
+        self.assertEquals(only_tag.slug, 'security')
 
     def test_create_post(self):
         # Create a category for post
@@ -735,6 +739,18 @@ class PostViewTest(BaseAcceptanceTest):
 
         # Check the link is marked up properly
         self.assertTrue('<a href="http://127.0.0.1:8000/">my first blog post</a>' in response.content)
+
+    def test_nonexistent_category_page(self):
+        category_url = '/category/blah/'
+        response = self.client.get(category_url)
+        self.assertEquals(response.status_code, 200)
+        self.assertTrue('No posts found' in response.content)
+
+    def test_nonexistent_tag_page(self):
+        tag_url = '/tag/blah/'
+        response = self.client.get(tag_url)
+        self.assertEquals(response.status_code, 200)
+        self.assertTrue('No posts found' in response.content)
 
 class FeedTest(BaseAcceptanceTest):
     def test_all_post_feed(self):
