@@ -14,6 +14,12 @@ class PostTest(TestCase):
         author = User.objects.create_user('testuser', 'user@example.com', 'password')
         author.save()
 
+        # Create the site
+        site = Site()
+        site.name = 'example.com'
+        site.domain = 'example.com'
+        site.save()
+
         # Create the post
         post = Post()
 
@@ -23,6 +29,7 @@ class PostTest(TestCase):
         post.slug = 'my-first-post'
         post.pub_date = timezone.now()
         post.author = author
+        post.site = site
 
         # Save post
         post.save()
@@ -45,6 +52,8 @@ class PostTest(TestCase):
         self.assertEquals(only_post.pub_date.second, post.pub_date.second)
         self.assertEquals(only_post.author.username, 'testuser')
         self.assertEquals(only_post.author.email, 'user@example.com')
+        self.assertEquals(only_post.site.name, 'example.com')
+        self.assertEquals(only_post.site.domain, 'example.com')
 
 class BaseAcceptanceTest(LiveServerTestCase):
     def set_up(self):
@@ -108,7 +117,8 @@ class AdminTest(BaseAcceptanceTest):
             'text': 'This is the first post',
             'slug': 'my-first-post',
             'pub_date_0': '2015-01-01',
-            'pub_date_1': '12:00:05'
+            'pub_date_1': '12:00:05',
+            'site': '1'
         },
         follow=True
         )
@@ -126,6 +136,12 @@ class AdminTest(BaseAcceptanceTest):
         author = User.objects.create_user('testuser', 'user@example.com', 'password')
         author.save()
 
+        # Create site
+        site = Site()
+        site.name = 'example.com'
+        site.domain = 'example.com'
+        site.save()
+
         # Create the post
         post = Post()
         post.title = 'First Post'
@@ -133,6 +149,7 @@ class AdminTest(BaseAcceptanceTest):
         post.slug = 'my-first-post'
         post.pub_date = timezone.now()
         post.author = author
+        post.site = site
         post.save()
 
         # Log in
@@ -144,7 +161,8 @@ class AdminTest(BaseAcceptanceTest):
             'text': 'This is the second post',
             'slug': 'my-second-post',
             'pub_date_0': '2015-01-01',
-            'pub_date_1': '12:00:05'
+            'pub_date_1': '12:00:05',
+            'site': '1'
         },
         follow=True
         )
@@ -165,12 +183,19 @@ class AdminTest(BaseAcceptanceTest):
         author = User.objects.create_user('testuser', 'user@example.com', 'password')
         author.save()
 
+        # Create site
+        site = Site()
+        site.name = 'example.com'
+        site.domain = 'example.com'
+        site.save()
+
         # Create the post
         post = Post()
         post.title = 'My first post'
         post.text = 'This is my first blog post'
         post.pub_date = timezone.now()
         post.author = author
+        post.site = site
         post.save()
 
         # Check new post saved
@@ -199,6 +224,12 @@ class PostViewTest(BaseAcceptanceTest):
         author = User.objects.create_user('tsetuser', 'user@example.com', 'password')
         author.save()
 
+        # Create site
+        site = Site()
+        site.name = 'example.com'
+        site.domian = 'example.com'
+        site.save()
+
         # Create the post
         post = Post()
         post.title = 'First Post'
@@ -206,6 +237,7 @@ class PostViewTest(BaseAcceptanceTest):
         post.slug = 'my-first-post'
         post.pub_date = timezone.now()
         post.author = author
+        post.site = site
         post.save()
 
         # Check the post saved
@@ -235,6 +267,12 @@ class PostViewTest(BaseAcceptanceTest):
         author = User.objects.create_user('testuser', 'user@example.com', 'password')
         author.save()
 
+        # Create Site
+        site = Site()
+        site.name = 'example.com'
+        site.domain = 'example.com'
+        site.save()
+
         # Create the post
         post = Post()
         post.title = 'First Post'
@@ -242,6 +280,7 @@ class PostViewTest(BaseAcceptanceTest):
         post.slug = 'my-first-post'
         post.pub_date = timezone.now()
         post.author = author
+        post.site = site
         post.save()
 
         # Check post saved
