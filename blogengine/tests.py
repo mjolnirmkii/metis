@@ -372,6 +372,41 @@ class AdminTest(BaseAcceptanceTest):
         all_posts = Post.objects.all()
         self.assertEquals(len(all_posts), 1)
 
+    def test_create_post_without_tag(self):
+        # Create category
+        category = Category()
+        category.name = 'security'
+        category.description = 'System or data security'
+        category.save()
+
+        # Log in
+        self.client.login(username='bobsmith', password='password')
+
+        # Check response code
+        response = self.client.get('/admin/blogengine/post/add/')
+        self.assertEquals(response.status_code, 200)
+
+        # Create new post
+        response = self.client.post('/admin/blogengine/post/add/', {
+            'title': 'First Post',
+            'text': 'My first blog post',
+            'pub_date_0': '2015-01-01',
+            'pub_date_1': '12:00:05',
+            'slug': 'my-first-post',
+            'site': '1',
+            'category': str(category.pk)
+            },
+            follow=True
+        )
+        self.assertEquals(response.status_code, 200)
+
+        # Check post
+        self.assertTrue('added successfully' in response.content)
+
+        # Check post in db
+        all_posts = Post.objects.all()
+        self.assertEquals(len(all_posts), 1)
+
     def test_edit_post(self):
         # Create category
         category = Category()
