@@ -6,20 +6,90 @@ from blogengine.models import Post, Category, Tag
 from django.contrib.flatpages.models import FlatPage
 from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
+import factory.django
 
 # Create your tests here.
+class SiteFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Site
+        django_get_or_create = (
+            'name',
+            'domain'
+        )
+
+    name = 'example.com'
+    domain = 'example.com'
+
+class CategoryFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Category
+        django_get_or_create = (
+            'name',
+            'description',
+            'slug'
+        )
+
+    name = 'security'
+    description = 'System or data security'
+    slug = 'security'
+
+class TagFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Tag
+        django_get_or_create = (
+            'name',
+            'description',
+            'slug'
+        )
+
+    name = 'security'
+    description = 'System or data security'
+    slug = 'security'
+
+class AuthorFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = User
+        django_get_or_create = ('username', 'email', 'password')
+
+    username = 'testuser'
+    email = 'user@example.com'
+    password = 'password'
+
+class FlatPageFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = FlatPage
+        django_get_or_create = (
+            'url',
+            'title',
+            'content'
+        )
+
+    url = '/about/'
+    title = 'About Me'
+    content = 'All about me'
+
+class PostFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Post
+        django_get_or_create = (
+            'title',
+            'text',
+            'slug',
+            'pub_date'
+        )
+
+    title = 'First Post'
+    text = 'My first blog post'
+    slug = 'my-first-post'
+    pub_date = timezone.now()
+    author = factory.SubFactory(AuthorFactory)
+    site = factory.SubFactory(SiteFactory)
+    category = factory.SubFactory(CategoryFactory)
+
 class PostTest(TestCase):
     def test_create_category(self):
         # Create a category
-        category = Category()
-
-        # Add stuff
-        category.name = 'security'
-        category.description = 'System or data security'
-        category.slug = 'security'
-
-        # Save, save, save
-        category.save()
+        category = CategoryFactory()
 
         # Check for category in db
         all_categories = Category.objects.all()
@@ -34,15 +104,7 @@ class PostTest(TestCase):
 
     def test_create_tag(self):
         # Create tag
-        tag = Tag()
-
-        # Add attributes
-        tag.name = 'security'
-        tag.description = 'System or data security'
-        tag.slug = 'security'
-
-        # Save it
-        tag.save()
+        tag = TagFactory()
 
         # Check for tag in db
         all_tags = Tag.objects.all()
@@ -56,42 +118,11 @@ class PostTest(TestCase):
         self.assertEquals(only_tag.slug, 'security')
 
     def test_create_post(self):
-        # Create a category for post
-        category = Category()
-        category.name = 'security'
-        category.description = 'System or data security'
-        category.save()
-
         # Create tag
-        tag = Tag()
-        tag.name = 'security'
-        tag.description = 'System or data security'
-        tag.save()
-
-        # Create an author
-        author = User.objects.create_user('testuser', 'user@example.com', 'password')
-        author.save()
-
-        # Create the site
-        site = Site()
-        site.name = 'example.com'
-        site.domain = 'example.com'
-        site.save()
+        tag = TagFactory()
 
         # Create the post
-        post = Post()
-
-        # Set the attributes
-        post.title = 'Testing Blog Post'
-        post.text = 'This is a test blog post generated in the test class'
-        post.slug = 'my-first-post'
-        post.pub_date = timezone.now()
-        post.author = author
-        post.site = site
-        post.category = category
-
-        # Save post
-        post.save()
+        post = PostFactory()
 
         # Add tag to post
         post.tags.add(tag)
@@ -104,8 +135,8 @@ class PostTest(TestCase):
         self.assertEquals(only_post, post)
 
         # Check all attributes individually
-        self.assertEquals(only_post.title, 'Testing Blog Post')
-        self.assertEquals(only_post.text, 'This is a test blog post generated in the test class')
+        self.assertEquals(only_post.title, 'First Post')
+        self.assertEquals(only_post.text, 'My first blog post')
         self.assertEquals(only_post.slug, 'my-first-post')
         self.assertEquals(only_post.pub_date.day, post.pub_date.day)
         self.assertEquals(only_post.pub_date.month, post.pub_date.month)
@@ -202,10 +233,7 @@ class AdminTest(BaseAcceptanceTest):
 
     def test_edit_tag(self):
         # Create tag
-        tag = Tag()
-        tag.name = 'security'
-        tag.description = 'System or data security'
-        tag.save()
+        tag = TagFactory()
 
         # log in
         self.client.login(username='bobsmith', password='password')
@@ -231,10 +259,7 @@ class AdminTest(BaseAcceptanceTest):
 
     def test_delete_tag(self):
         # Create tag
-        tag = Tag()
-        tag.name = 'security'
-        tag.description = 'System or data security'
-        tag.save()
+        tag = TagFactory()
 
         # Log in
         self.client.login(username='bobsmith', password='password')
@@ -280,10 +305,7 @@ class AdminTest(BaseAcceptanceTest):
 
     def test_edit_category(self):
         # Create category
-        category = Category()
-        category.name = 'security'
-        category.description = 'System or data security'
-        category.save()
+        category = CategoryFactory()
 
         # Log in
         self.client.login(username='bobsmith', password='password')
@@ -309,10 +331,7 @@ class AdminTest(BaseAcceptanceTest):
 
     def test_delete_category(self):
         # Create category
-        category = Category()
-        category.name = 'security'
-        category.description = 'System or data security'
-        category.save()
+        category = CategoryFactory()
 
         # Log in
         self.client.login(username='bobsmith', password="password")
@@ -332,16 +351,10 @@ class AdminTest(BaseAcceptanceTest):
 
     def test_create_post(self):
         # Create category
-        category = Category()
-        category.name = 'security'
-        category.description = 'System or data security'
-        category.save()
+        category = CategoryFactory()
 
         # Create tag
-        tag = Tag()
-        tag.name = 'security'
-        tag.description = 'System or data security'
-        tag.save()
+        tag = TagFactory()
 
         # Log in
         self.client.login(username='bobsmith', password="password")
@@ -374,10 +387,7 @@ class AdminTest(BaseAcceptanceTest):
 
     def test_create_post_without_tag(self):
         # Create category
-        category = Category()
-        category.name = 'security'
-        category.description = 'System or data security'
-        category.save()
+        category = CategoryFactory()
 
         # Log in
         self.client.login(username='bobsmith', password='password')
@@ -408,38 +418,11 @@ class AdminTest(BaseAcceptanceTest):
         self.assertEquals(len(all_posts), 1)
 
     def test_edit_post(self):
-        # Create category
-        category = Category()
-        category.name = 'security'
-        category.description = 'System or data security'
-        category.save()
-
         # Create tag
-        tag = Tag()
-        tag.name = 'security'
-        tag.description = 'System or data security'
-        tag.save()
-
-        # Create author
-        author = User.objects.create_user('testuser', 'user@example.com', 'password')
-        author.save()
-
-        # Create site
-        site = Site()
-        site.name = 'example.com'
-        site.domain = 'example.com'
-        site.save()
+        tag = TagFactory()
 
         # Create the post
-        post = Post()
-        post.title = 'First Post'
-        post.text = 'This is the first post'
-        post.slug = 'my-first-post'
-        post.pub_date = timezone.now()
-        post.author = author
-        post.site = site
-        post.category = category
-        post.save()
+        post = PostFactory()
 
         # Add tags
         post.tags.add(tag)
@@ -456,7 +439,7 @@ class AdminTest(BaseAcceptanceTest):
             'pub_date_0': '2015-01-01',
             'pub_date_1': '12:00:05',
             'site': '1',
-            'category': str(category.pk),
+            'category': str(post.category.pk),
             'tags': str(tag.pk)
             },
             follow=True
@@ -474,37 +457,11 @@ class AdminTest(BaseAcceptanceTest):
         self.assertEquals(only_post.text, 'This is the second post')
 
     def test_delete_post(self):
-        # Create category
-        category = Category()
-        category.name = 'security'
-        category.description = 'System and data security'
-        category.save()
-
         # Create tag
-        tag = Tag()
-        tag.name = 'security'
-        tag.description = 'System or data security'
-        tag.save()
-
-        # Create author
-        author = User.objects.create_user('testuser', 'user@example.com', 'password')
-        author.save()
-
-        # Create site
-        site = Site()
-        site.name = 'example.com'
-        site.domain = 'example.com'
-        site.save()
+        tag = TagFactory()
 
         # Create the post
-        post = Post()
-        post.title = 'My first post'
-        post.text = 'This is my first blog post'
-        post.pub_date = timezone.now()
-        post.author = author
-        post.site = site
-        post.category = category
-        post.save()
+        post = PostFactory()
 
         # Add tags
         post.tags.add(tag)
@@ -533,26 +490,16 @@ class AdminTest(BaseAcceptanceTest):
 class PostViewTest(BaseAcceptanceTest):
     def test_index(self):
         # Create category
-        category = Category()
-        category.name = 'security'
-        category.description = 'System or data security'
-        category.save()
+        category = CategoryFactory()
 
         # Create tag
-        tag = Tag()
-        tag.name = 'security'
-        tag.description = 'System or data security'
-        tag.save()
+        tag = TagFactory()
 
         # Create author
-        author = User.objects.create_user('tsetuser', 'user@example.com', 'password')
-        author.save()
+        author = AuthorFactory()
 
         # Create site
-        site = Site()
-        site.name = 'example.com'
-        site.domian = 'example.com'
-        site.save()
+        site = SiteFactory()
 
         # Create the post
         post = Post()
@@ -597,26 +544,16 @@ class PostViewTest(BaseAcceptanceTest):
 
     def test_post_page(self):
         # Create category
-        category = Category()
-        category.name = 'security'
-        category.description = 'System or data security'
-        category.save()
+        category = CategoryFactory()
 
         # Create tag
-        tag = Tag()
-        tag.name = 'security'
-        tag.description = 'System or data security'
-        tag.save()
+        tag = TagFactory()
 
         # Create author
-        author = User.objects.create_user('testuser', 'user@example.com', 'password')
-        author.save()
+        author = AuthorFactory()
 
         # Create Site
-        site = Site()
-        site.name = 'example.com'
-        site.domain = 'example.com'
-        site.save()
+        site = SiteFactory()
 
         # Create the post
         post = Post()
@@ -667,20 +604,13 @@ class PostViewTest(BaseAcceptanceTest):
 
     def test_category_page(self):
         # Create category
-        category = Category()
-        category.name = 'security'
-        category.description = 'System or data security'
-        category.save()
+        category = CategoryFactory()
 
         # Create author
-        author = User.objects.create_user('testuser', 'user@example.com', 'password')
-        author.save()
+        author = AuthorFactory()
 
         # Create site
-        site = Site()
-        site.name = 'example.com'
-        site.domain = 'example.com'
-        site.save()
+        site = SiteFactory()
 
         # Create the post
         post = Post()
@@ -722,20 +652,13 @@ class PostViewTest(BaseAcceptanceTest):
 
     def test_tag_page(self):
         # Create tag
-        tag = Tag()
-        tag.name = 'security'
-        tag.description = 'System or data security'
-        tag.save()
+        tag = TagFactory()
 
         # Create the author
-        author = User.objects.create_user('testuser', 'user@example.com', 'password')
-        author.save()
+        author = AuthorFactory()
 
         # Create the site
-        site = Site()
-        site.name = 'example.com'
-        site.domain = 'example.com'
-        site.save()
+        site = SiteFactory()
 
         # Create the post
         post = Post()
@@ -790,26 +713,16 @@ class PostViewTest(BaseAcceptanceTest):
 class FeedTest(BaseAcceptanceTest):
     def test_all_post_feed(self):
         # Create category
-        category = Category()
-        category.name = 'security'
-        category.description = 'System or data security'
-        category.save()
+        category = CategoryFactory()
 
         # Create tag
-        tag = Tag()
-        tag.name = 'security'
-        tag.description = 'System or data security'
-        tag.save()
+        tag = TagFactory()
 
         # Create author
-        author = User.objects.create_user('testuser', 'user@example.com', 'password')
-        author.save()
+        author = AuthorFactory()
 
         # Create site
-        site = Site()
-        site.name = 'example.com'
-        site.domain = 'example.com'
-        site.save()
+        site = SiteFactory()
 
         # Create post
         post = Post()
@@ -852,11 +765,7 @@ class FeedTest(BaseAcceptanceTest):
 class FlatPageViewTest(BaseAcceptanceTest):
     def test_create_flat_page(self):
         # Create flat page
-        page = FlatPage()
-        page.url = '/about/'
-        page.title = 'About Me'
-        page.content = 'All about me'
-        page.save()
+        page = FlatPageFactory()
 
         # Add site
         page.sites.add(Site.objects.all()[0])
