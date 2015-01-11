@@ -542,6 +542,9 @@ class PostViewTest(BaseAcceptanceTest):
         # Check markdown link is correct html mark up
         self.assertTrue('<a href="http://127.0.0.1:8080/">my first blog post</a>' in response.content)
 
+        # Check correct template was used
+        self.assertTemplateUsed(response, 'blogengine/post_list.html', 'blogengine/includes/base.html')
+
     def test_post_page(self):
         # Create category
         category = CategoryFactory()
@@ -602,6 +605,9 @@ class PostViewTest(BaseAcceptanceTest):
         # Check markdown link is proper html mark up
         self.assertTrue('<a href="http://127.0.0.1:8080/">my first post</a>' in response.content)
 
+        # Check correct template used
+        self.assertTemplateUsed(response, 'blogengine/post_detail.html', 'blogengine/includes/base.html')
+
     def test_category_page(self):
         # Create category
         category = CategoryFactory()
@@ -649,6 +655,9 @@ class PostViewTest(BaseAcceptanceTest):
 
         # Check the link is marked up properly
         self.assertTrue('<a href="http://127.0.0.1:8000/">my first blog post</a>' in response.content)
+
+        # Check correct template used
+        self.assertTemplateUsed(response, 'blogengine/category_post_list.html', 'blogengine/includes/base.html')
 
     def test_tag_page(self):
         # Create tag
@@ -761,6 +770,32 @@ class FeedTest(BaseAcceptanceTest):
         feed_post = feed.entries[0]
         self.assertEquals(feed_post.title, post.title)
         self.assertTrue('My <em>First</em> blog post' in feed_post.description)
+
+    def test_category_feed(self):
+        # Create post
+        post = PostFactory(text='This is my *first* post')
+
+        # Create second post in different category
+        category = CategoryFactory(name='cryptography', description='Cryptography and encryption', slug='cryptography')
+        post2 = PostFactory(text='This is my *second* post', title='Second Post', slug='my-second-post', category=category)
+
+        # Fetch feed
+        response = self.client.get('/feeds/posts/category/security/')
+        self.assertEquals(response.status_code, 200)
+
+        # PArse feed
+        feed = feedparser.parse(response.content)
+
+        # Check length
+        self.assertEquals(len(feed.entries), 1)
+
+        # Check post is correct
+        feed_post = feed.entries[0]
+        self.assertEquals(feed_post.title, post.title)
+        self.assertTrue('This is my <em>first</em> post' in feed_post.description)
+
+        # Check second post is not in feed
+        self.assertTrue('This is my <em>second</em> post' not in response.content)
 
 class FlatPageViewTest(BaseAcceptanceTest):
     def test_create_flat_page(self):
